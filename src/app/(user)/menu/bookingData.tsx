@@ -1,15 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
 
-const AgencyDetailsScreen = () => {
+const BookingData = () => {
     return (
         <View style={styles.container}>
-            <Text>Agency Details</Text>
+            <Text>BookingData</Text>
         </View>
     )
 }
 
 
-export default AgencyDetailsScreen;
+export default BookingData;
 
 const styles = StyleSheet.create({
     container: {

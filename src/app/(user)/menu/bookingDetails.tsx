@@ -1,15 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
 
-const StakeholderDetails = () => {
+const BookingDetails = () => {
     return (
         <View style={styles.container}>
-            <Text>StakeholderDetails</Text>
+            <Text>booking Details</Text>
         </View>
     )
 }
 
 
-export default StakeholderDetails;
+export default BookingDetails;
 
 const styles = StyleSheet.create({
     container: {
