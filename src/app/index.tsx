@@ -5,6 +5,7 @@ import { Link } from 'expo-router';
 import { Button } from 'react-native-paper';
 
 const Index = () => {
+
     return (
         <View style={{ flex: 1, justifyContent: "center", padding: 10 }}>
             <Link href="/(user)" asChild>

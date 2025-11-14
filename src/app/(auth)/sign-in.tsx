@@ -55,7 +55,7 @@ export default function SignIn() {
             <Button
                 mode="contained"
                 onPress={onSignIn}
-                style={{ paddingVertical: 6, borderRadius: 8 }}
+                style={{ paddingVertical: 6 }}
             >
                 Sign In
             </Button>
