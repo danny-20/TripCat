@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { View } from "react-native";
@@ -11,6 +12,7 @@ export default function SignUp() {
     const [password, setPassword] = useState("");
     const [emailError, setEmailError] = useState("");
     const [passwordError, setPasswordError] = useState("");
+    const [loading, setLoading] = useState(false);
 
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,7 +36,7 @@ export default function SignUp() {
     };
 
 
-    const signUpWithEMail = () => {
+    const signUpWithEMail = async () => {
         let valid = true;
 
         // email check
@@ -51,7 +53,20 @@ export default function SignUp() {
 
         if (!valid) return;
 
-        console.log("Validation passed");
+        // ==========================
+        // 🚀 SUPABASE SIGN UP CALL
+        // ==========================
+        setLoading(true)
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+        });
+        if (error) {
+            alert(error.message);
+            return;
+        }
+        alert("Signup successful!");
+        setLoading(false)
     };
 
 
@@ -101,8 +116,8 @@ export default function SignUp() {
             {passwordError ? <Text style={{ color: "red", marginBottom: 10 }}>{passwordError}</Text> : null}
 
 
-            <Button mode="contained" onPress={signUpWithEMail} style={{ paddingVertical: 6 }}>
-                Sign Up
+            <Button mode="contained" onPress={signUpWithEMail} disabled={loading} style={{ paddingVertical: 6 }}>
+                {loading ? "Creating Account" : "Sign Up"}
             </Button>
 
             <Link href="/sign-in" asChild>

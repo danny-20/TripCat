@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { View } from "react-native";
@@ -9,10 +10,40 @@ export default function SignIn() {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const onSignIn = () => {
-        // TODO: Add your Supabase sign-in logic
-        // router.replace("/(tabs)");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const handleLogin = async () => {
+        setErrorMsg("");
+
+        if (!emailRegex.test(email)) {
+            setErrorMsg("Enter a valid email.");
+            return;
+        }
+
+        if (password.length < 6) {
+            setErrorMsg("Password must be at least 6 characters.");
+            return;
+        }
+
+        setLoading(true);
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        setLoading(false);
+
+        if (error) {
+            setErrorMsg(error.message);
+            return;
+        }
+
+        // Login successful → redirect user
+        router.replace("/"); // Change this to your protected route
     };
 
     return (
@@ -32,7 +63,7 @@ export default function SignIn() {
                     textAlign: "center",
                 }}
             >
-                Welcome Back
+                Login
             </Text>
 
             <TextInput
@@ -40,6 +71,8 @@ export default function SignIn() {
                 value={email}
                 onChangeText={setEmail}
                 mode="outlined"
+                outlineColor={"#D1D5DB"}
+                activeOutlineColor={theme.colors.primary}
                 style={{ marginBottom: 20 }}
             />
 
@@ -49,24 +82,27 @@ export default function SignIn() {
                 value={password}
                 onChangeText={setPassword}
                 mode="outlined"
-                style={{ marginBottom: 30 }}
+                outlineColor={"#D1D5DB"}
+                activeOutlineColor={theme.colors.primary}
+                style={{ marginBottom: 20 }}
             />
+
+            {errorMsg ? (
+                <Text style={{ color: "red", marginBottom: 10 }}>{errorMsg}</Text>
+            ) : null}
 
             <Button
                 mode="contained"
-                onPress={onSignIn}
+                onPress={handleLogin}
+                disabled={loading}
                 style={{ paddingVertical: 6 }}
             >
-                Sign In
+                {loading ? "Signing In..." : "Login"}
             </Button>
 
             <Link href="/sign-up" asChild>
-                <Button
-                    mode="text"
-                    style={{ marginTop: 10 }}
-                    textColor={theme.colors.primary}
-                >
-                    Create an account
+                <Button mode="text" style={{ marginTop: 10 }} textColor={theme.colors.primary}>
+                    Create a new account
                 </Button>
             </Link>
         </View>
