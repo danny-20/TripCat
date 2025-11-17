@@ -1,8 +1,14 @@
 import { userTheme } from "@/constants/Colors";
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
+import { useAuth } from "../providers/AuthProvider";
 
 export default function AuthLayout() {
+    const { session } = useAuth();
+
+    if (session) {
+        return <Redirect href="/" />
+    }
     return (
         <PaperProvider theme={userTheme}>
             <Stack

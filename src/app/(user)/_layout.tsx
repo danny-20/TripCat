@@ -1,11 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 
 import Colors from '@/constants/Colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Provider as PaperProvider } from "react-native-paper";
 import { useColorScheme } from '../../components/useColorScheme';
+import { useAuth } from '../providers/AuthProvider';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -15,8 +16,13 @@ function TabBarIcon(props: {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
 
+
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+
+  const { session } = useAuth();
+
 
   const paperTheme = {
     roundness: 12,
@@ -30,6 +36,10 @@ export default function TabLayout() {
       onSurface: Colors.trip.text,
     },
   };
+
+  if (!session) {
+    return <Redirect href="/" />
+  }
 
   return (
     <PaperProvider theme={paperTheme}>
