@@ -1,8 +1,10 @@
+import { useGetAgencyDetail } from "@/api";
 import Colors from "@/constants/Colors";
 import { AgencyDetails } from "@/constants/Types";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
+    ActivityIndicator,
     Button,
     Checkbox,
     HelperText,
@@ -42,34 +44,20 @@ const AgencyDetailsScreen = () => {
         }
     };
 
-    // Simulated fetch (replace with actual API later)
-    useEffect(() => {
-        const fetchData = async () => {
-            // Simulate delay and pretend backend data exists
-            const existingData = {
-                id: "1",
-                agencyName: "TripCat Travels",
-                ownerName: "Dinesh Subba",
-                email: "info@tripcat.com",
-                phone: "+91 9876543210",
-                whatsapp: "+91 9876543210",
-                address: "MG Marg",
-                city: "Gangtok",
-                state: "Sikkim",
-                country: "India",
-                postalCode: "737101",
-                website: "tripcat.com",
-                registrationNumber: "TRIP2025",
-            };
 
-            setTimeout(() => {
-                setDetails(existingData);
-                setIsEditable(false); // view mode after loading data
-            }, 800);
-        };
 
-        fetchData();
-    }, []);
+    const { data, error, isLoading } = useGetAgencyDetail()
+    console.log(data)
+
+    if (isLoading) {
+        return <ActivityIndicator />
+    }
+
+    if (error) {
+        return <Text>Failed to load data</Text>
+    }
+
+
 
     // Handle input changes
     const handleChange = (key: keyof AgencyDetails, value: string) => {
