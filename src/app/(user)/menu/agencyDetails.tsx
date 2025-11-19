@@ -1,7 +1,8 @@
 import { useGetAgencyDetail } from "@/api";
+import { useAuth } from "@/app/providers/AuthProvider";
 import Colors from "@/constants/Colors";
 import { AgencyDetails } from "@/constants/Types";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
     ActivityIndicator,
@@ -16,7 +17,6 @@ import {
 
 const AgencyDetailsScreen = () => {
     const [details, setDetails] = useState<AgencyDetails>({
-        id: "",
         agencyName: "",
         ownerName: "",
         email: "",
@@ -35,20 +35,38 @@ const AgencyDetailsScreen = () => {
     const [isEditable, setIsEditable] = useState(true);
     const [isWhatsappSame, setIsWhatsappSame] = useState(false);
 
-    const handleWhatsappSync = (checked: boolean) => {
-        setIsWhatsappSame(checked);
-        if (checked) {
-            setDetails({ ...details, whatsapp: details.phone });
+
+    const { session } = useAuth()
+    const userId = session?.user.id;
+    const { data, error, isLoading } = useGetAgencyDetail(userId)
+
+
+    useEffect(() => {
+        if (data) {
+            // Pre-fill form
+            setDetails({
+
+                agencyName: data.agencyName || "",
+                ownerName: data.ownerName || "",
+                email: data.email || "",
+                phone: data.phone || "",
+                whatsapp: data.whatsapp || "",
+                address: data.address || "",
+                city: data.city || "",
+                state: data.state || "",
+                country: data.country || "",
+                postalCode: data.postalCode || "",
+                website: data.website || "",
+                registrationNumber: data.registrationNumber || "",
+            });
+
+            setIsEditable(false);     // <-- DATA EXISTS → editing allowed
         } else {
-            setDetails({ ...details, whatsapp: "" });
+            setIsEditable(true);     // <-- NO DATA → editable form for first entry
         }
-    };
+    }, [data]);
 
-
-
-    const { data, error, isLoading } = useGetAgencyDetail()
     console.log(data)
-
     if (isLoading) {
         return <ActivityIndicator />
     }
@@ -58,6 +76,16 @@ const AgencyDetailsScreen = () => {
     }
 
 
+
+
+    const handleWhatsappSync = (checked: boolean) => {
+        setIsWhatsappSame(checked);
+        if (checked) {
+            setDetails({ ...details, whatsapp: details.phone });
+        } else {
+            setDetails({ ...details, whatsapp: "" });
+        }
+    };
 
     // Handle input changes
     const handleChange = (key: keyof AgencyDetails, value: string) => {
@@ -137,8 +165,7 @@ const AgencyDetailsScreen = () => {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Agency Details</Text>
-
-                    {!isEditable && (
+                    {data && (
                         <IconButton
                             icon="pencil"
                             size={22}
