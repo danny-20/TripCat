@@ -1,6 +1,7 @@
 
 import { logoutUser } from '@/api';
 import { View } from '@/components/Themed';
+import { router } from 'expo-router';
 import { Button } from 'react-native-paper';
 
 export default function ProfileScreen() {
@@ -8,7 +9,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await logoutUser();
-      alert("Logged out successfully!");
+      router.replace("/");
 
     } catch (error) {
       alert("Failed to logout!");

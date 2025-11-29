@@ -28,7 +28,9 @@ export default function StakeholderListScreen() {
         );
     }
 
-    // EMPTY STATE
+    /* ====================================
+       EMPTY STATE
+    ==================================== */
     if (!data || data.length === 0) {
         return (
             <View
@@ -39,17 +41,27 @@ export default function StakeholderListScreen() {
                     padding: 20,
                 }}
             >
-                <Text style={{ fontSize: 18, color: Colors.trip.text, marginBottom: 10 }}>
+                <Text
+                    style={{
+                        fontSize: 18,
+                        color: Colors.trip.text,
+                        marginBottom: 16,
+                        fontFamily: "Montserrat-SemiBold",
+                    }}
+                >
                     No stakeholders found
                 </Text>
 
                 <Link href="/(user)/menu/stakeholders/create" asChild>
                     <Button
                         mode="contained"
-                        style={{ borderRadius: 12 }}
                         buttonColor={Colors.trip.primary}
                         textColor="#fff"
-                        labelStyle={{ fontFamily: "Montserrat-SemiBold" }}
+                        style={{ borderRadius: 12 }}
+                        labelStyle={{
+                            fontFamily: "Montserrat-SemiBold",
+                            fontSize: 16,
+                        }}
                     >
                         Add First Stakeholder
                     </Button>
@@ -58,7 +70,9 @@ export default function StakeholderListScreen() {
         );
     }
 
-    // LIST VIEW
+    /* ====================================
+       LIST VIEW
+    ==================================== */
     return (
         <FlatList
             contentContainerStyle={{ padding: 16 }}
@@ -79,7 +93,7 @@ export default function StakeholderListScreen() {
                     <Text
                         style={{
                             fontSize: 18,
-                            marginBottom: 6,
+                            marginBottom: 4,
                             color: Colors.trip.text,
                             fontFamily: "Montserrat-SemiBold",
                         }}
@@ -87,7 +101,13 @@ export default function StakeholderListScreen() {
                         {item.businessName}
                     </Text>
 
-                    <Text style={{ color: Colors.trip.muted, marginBottom: 10 }}>
+                    <Text
+                        style={{
+                            color: Colors.trip.muted,
+                            marginBottom: 12,
+                            fontFamily: "Montserrat-Regular",
+                        }}
+                    >
                         {item.contactPersonName} • {item.stakeholderType}
                     </Text>
 
@@ -100,10 +120,13 @@ export default function StakeholderListScreen() {
                     >
                         <Button
                             mode="contained"
-                            style={{ borderRadius: 12 }}
                             buttonColor={Colors.trip.primary}
                             textColor="#fff"
-                            labelStyle={{ fontFamily: "Montserrat-SemiBold" }}
+                            style={{ borderRadius: 12 }}
+                            labelStyle={{
+                                fontFamily: "Montserrat-SemiBold",
+                                fontSize: 15,
+                            }}
                         >
                             View Details
                         </Button>

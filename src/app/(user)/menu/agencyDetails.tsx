@@ -1,7 +1,11 @@
-import { useGetAgencyDetail } from "@/api";
+import {
+    useGetAgencyDetail,
+    useInsertAgencyDetails,
+    useUpdateAgencyDetails,
+} from "@/api";
 import { useAuth } from "@/app/providers/AuthProvider";
 import Colors from "@/constants/Colors";
-import { AgencyDetails } from "@/constants/Types";
+import { AgencyDetailsPayload } from "@/constants/Types";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
@@ -12,11 +16,13 @@ import {
     IconButton,
     Surface,
     Text,
-    TextInput
+    TextInput,
 } from "react-native-paper";
 
-const AgencyDetailsScreen = () => {
-    const [details, setDetails] = useState<AgencyDetails>({
+export default function AgencyDetailsScreen() {
+    // ---------- LOCAL FORM STATES ----------
+    const [details, setDetails] = useState<AgencyDetailsPayload>({
+        uid: "",
         agencyName: "",
         ownerName: "",
         email: "",
@@ -35,103 +41,142 @@ const AgencyDetailsScreen = () => {
     const [isEditable, setIsEditable] = useState(true);
     const [isWhatsappSame, setIsWhatsappSame] = useState(false);
 
+    // ---------- AUTH ----------
+    const { session } = useAuth();
+    const userId = session?.user.id ?? null;
 
-    const { session } = useAuth()
-    const userId = session?.user.id;
-    const { data, error, isLoading } = useGetAgencyDetail(userId)
+    // ---------- API ----------
+    const { data: agency, error, isLoading } = useGetAgencyDetail(userId);
+    const insertAgency = useInsertAgencyDetails();
+    const updateAgency = useUpdateAgencyDetails();
 
-
+    // ---------- PREFILL DATA ONCE ----------
     useEffect(() => {
-        if (data) {
-            // Pre-fill form
-            setDetails({
+        if (!agency) return; // No saved details → skip (new user)
 
-                agencyName: data.agencyName || "",
-                ownerName: data.ownerName || "",
-                email: data.email || "",
-                phone: data.phone || "",
-                whatsapp: data.whatsapp || "",
-                address: data.address || "",
-                city: data.city || "",
-                state: data.state || "",
-                country: data.country || "",
-                postalCode: data.postalCode || "",
-                website: data.website || "",
-                registrationNumber: data.registrationNumber || "",
-            });
+        // Only fill form once (initial load)
+        setDetails({
+            uid: agency.uid,
+            agencyName: agency.agencyName,
+            ownerName: agency.ownerName,
+            email: agency.email,
+            phone: agency.phone,
+            whatsapp: agency.whatsapp,
+            address: agency.address,
+            city: agency.city,
+            state: agency.state,
+            country: agency.country,
+            postalCode: agency.postalCode,
+            website: agency.website || "",
+            registrationNumber: agency.registrationNumber || "",
+        });
 
-            setIsEditable(false);     // <-- DATA EXISTS → editing allowed
-        } else {
-            setIsEditable(true);     // <-- NO DATA → editable form for first entry
-        }
-    }, [data]);
+        setIsEditable(false);
+    }, [agency]);
 
-    console.log(data)
-    if (isLoading) {
-        return <ActivityIndicator />
-    }
+    // ---------- LOADING / ERROR STATES ----------
+    if (isLoading) return <ActivityIndicator />;
 
     if (error) {
-        return <Text>Failed to load data</Text>
+        return (
+            <View style={{ padding: 20 }}>
+                <Text style={{ color: Colors.trip.error }}>
+                    Error loading agency details.
+                </Text>
+            </View>
+        );
     }
 
-
-
-
+    // ---------- HANDLERS ----------
     const handleWhatsappSync = (checked: boolean) => {
         setIsWhatsappSame(checked);
-        if (checked) {
-            setDetails({ ...details, whatsapp: details.phone });
-        } else {
-            setDetails({ ...details, whatsapp: "" });
-        }
+        setDetails((prev) => ({
+            ...prev,
+            whatsapp: checked ? prev.phone : "",
+        }));
     };
 
-    // Handle input changes
-    const handleChange = (key: keyof AgencyDetails, value: string) => {
-        setDetails({ ...details, [key]: value });
-        if (errors[key]) setErrors({ ...errors, [key]: "" });
+    const handleChange = (
+        key: keyof AgencyDetailsPayload,
+        value: string
+    ) => {
+        setDetails((prev) => ({ ...prev, [key]: value }));
+        if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
     };
 
-    // Validators
     const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
     const validatePhone = (phone: string) =>
         /^\+?\d{10,15}$/.test(phone.replace(/\s+/g, ""));
 
-    // Submit logic
     const handleSubmit = () => {
         const newErrors: Record<string, string> = {};
 
-        if (!details.agencyName.trim())
-            newErrors.agencyName = "Agency name is required";
-        if (!details.ownerName.trim())
-            newErrors.ownerName = "Owner name is required";
-        if (!details.email.trim()) newErrors.email = "Email is required";
+        if (!details.agencyName) newErrors.agencyName = "Agency name is required";
+        if (!details.ownerName) newErrors.ownerName = "Owner name is required";
+        if (!details.email) newErrors.email = "Email is required";
         else if (!validateEmail(details.email))
-            newErrors.email = "Enter a valid email address";
-        if (!details.phone.trim()) newErrors.phone = "Phone number is required";
+            newErrors.email = "Enter a valid email";
+        if (!details.phone) newErrors.phone = "Phone number is required";
         else if (!validatePhone(details.phone))
-            newErrors.phone = "Enter a valid phone number";
-        if (!details.address.trim()) newErrors.address = "Address is required";
-        if (!details.city.trim()) newErrors.city = "City is required";
-        if (!details.state.trim()) newErrors.state = "State is required";
-        if (!details.country.trim()) newErrors.country = "Country is required";
-        if (!details.postalCode.trim())
-            newErrors.postalCode = "Postal code is required";
+            newErrors.phone = "Enter a valid phone";
+
+        if (!details.address) newErrors.address = "Address required";
+        if (!details.city) newErrors.city = "City required";
+        if (!details.state) newErrors.state = "State required";
+        if (!details.country) newErrors.country = "Country required";
+        if (!details.postalCode) newErrors.postalCode = "Postal code required";
 
         setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) return;
 
-        if (Object.keys(newErrors).length === 0) {
-            console.log("✅ Valid form data:", details);
-            alert("Form saved successfully!");
-            setIsEditable(false);
+        // INSERT
+        if (!agency) {
+            insertAgency.mutate(
+                { ...details, uid: userId! },
+                {
+                    onSuccess: (created) => {
+                        alert("Agency details added!");
+                        setIsEditable(false);
+                    },
+                    onError: (err) => alert(err.message),
+                }
+            );
+            return;
         }
+
+        // UPDATE
+        updateAgency.mutate(
+            {
+                id: agency.id,
+                payload: {
+                    agencyName: details.agencyName,
+                    ownerName: details.ownerName,
+                    email: details.email,
+                    phone: details.phone,
+                    whatsapp: details.whatsapp,
+                    address: details.address,
+                    city: details.city,
+                    state: details.state,
+                    country: details.country,
+                    postalCode: details.postalCode,
+                    website: details.website || null,
+                    registrationNumber: details.registrationNumber || null,
+                },
+            },
+            {
+                onSuccess: () => {
+                    alert("Agency details updated!");
+                    setIsEditable(false);
+                },
+                onError: (err) => alert(err.message),
+            }
+        );
     };
 
-    // Renders each input field
+    // ---------- INPUT RENDER ----------
     const renderField = (
         label: string,
-        key: keyof AgencyDetails,
+        key: keyof AgencyDetailsPayload,
         value: string,
         keyboardType:
             | "default"
@@ -146,7 +191,9 @@ const AgencyDetailsScreen = () => {
                 value={value}
                 onChangeText={(v) => handleChange(key, v)}
                 style={styles.input}
-                outlineColor={errors[key] ? Colors.trip.error : Colors.trip.border}
+                outlineColor={
+                    errors[key] ? Colors.trip.error : Colors.trip.border
+                }
                 activeOutlineColor={
                     errors[key] ? Colors.trip.error : Colors.trip.primary
                 }
@@ -155,17 +202,19 @@ const AgencyDetailsScreen = () => {
                 keyboardType={keyboardType}
                 theme={inputTheme}
             />
-            {errors[key] && <HelperText type="error">{errors[key]}</HelperText>}
+            {errors[key] && (
+                <HelperText type="error">{errors[key]}</HelperText>
+            )}
         </>
     );
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Surface style={styles.card} elevation={3}>
-                {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Agency Details</Text>
-                    {data && (
+
+                    {agency && (
                         <IconButton
                             icon="pencil"
                             size={22}
@@ -175,11 +224,11 @@ const AgencyDetailsScreen = () => {
                     )}
                 </View>
 
-                {/* Inputs */}
                 {renderField("Agency Name", "agencyName", details.agencyName)}
                 {renderField("Owner Name", "ownerName", details.ownerName)}
                 {renderField("Email", "email", details.email, "email-address")}
                 {renderField("Phone", "phone", details.phone, "phone-pad")}
+
                 <View style={styles.checkboxRow}>
                     <Checkbox
                         status={isWhatsappSame ? "checked" : "unchecked"}
@@ -187,14 +236,22 @@ const AgencyDetailsScreen = () => {
                         color={Colors.trip.primary}
                         disabled={!isEditable}
                     />
-                    <Text style={styles.checkboxText}>WhatsApp same as phone</Text>
+                    <Text style={styles.checkboxText}>
+                        WhatsApp same as phone
+                    </Text>
                 </View>
+
                 {renderField("WhatsApp", "whatsapp", details.whatsapp, "phone-pad")}
                 {renderField("Address", "address", details.address)}
                 {renderField("City", "city", details.city)}
                 {renderField("State", "state", details.state)}
                 {renderField("Country", "country", details.country)}
-                {renderField("Postal Code", "postalCode", details.postalCode, "numeric")}
+                {renderField(
+                    "Postal Code",
+                    "postalCode",
+                    details.postalCode,
+                    "numeric"
+                )}
                 {renderField("Website (optional)", "website", details.website || "")}
                 {renderField(
                     "Registration Number (optional)",
@@ -202,7 +259,6 @@ const AgencyDetailsScreen = () => {
                     details.registrationNumber || ""
                 )}
 
-                {/* Save button only when editing */}
                 {isEditable && (
                     <Button
                         mode="contained"
@@ -218,9 +274,14 @@ const AgencyDetailsScreen = () => {
             </Surface>
         </ScrollView>
     );
-};
+}
 
-// Input theme for consistent rounded fields
+//
+// ─────────────────────────────────────────────
+//   THEME + STYLES
+// ─────────────────────────────────────────────
+//
+
 const inputTheme = {
     roundness: 12,
     colors: {
@@ -229,7 +290,6 @@ const inputTheme = {
     },
 };
 
-// Styles
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
@@ -276,5 +336,3 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 });
-
-export default AgencyDetailsScreen;
