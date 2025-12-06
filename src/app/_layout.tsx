@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { PaperProvider, Portal } from 'react-native-paper';
 import { useColorScheme } from '../components/useColorScheme';
 import AuthProvider from './providers/AuthProvider';
 import QueryProvider from './providers/QueryProvider';
@@ -51,18 +52,23 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <QueryProvider>
-          <Stack>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(user)" options={{ headerShown: false }} />
-            <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            {/* <Stack.Screen name="modal" options={{ presentation: 'modal' }} /> */}
-          </Stack>
-        </QueryProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <PaperProvider>
+      <Portal.Host>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <AuthProvider>
+            <QueryProvider>
+              <Stack>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(user)" options={{ headerShown: false }} />
+                <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                {/* <Stack.Screen name="modal" options={{ presentation: 'modal' }} /> */}
+              </Stack>
+            </QueryProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </Portal.Host>
+    </PaperProvider>
+
   );
 }

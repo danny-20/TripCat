@@ -8,6 +8,8 @@ type AuthData = {
     profile: any;
     isAdmin: boolean;
 };
+
+
 const AuthContext = createContext<AuthData>({
     session: null,
     loading: true,
@@ -41,7 +43,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
     }, [])
 
-    console.log(profile)
     return <AuthContext.Provider value={{ session, loading, profile, isAdmin: profile?.group === 'ADMIN' }}>{children}</AuthContext.Provider>
 }
 

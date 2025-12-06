@@ -49,14 +49,20 @@ export const useStakeholder = (id?: number) => {
 /* ===============================
    CREATE STAKEHOLDER
 ================================ */
-export const useCreateStakeholder = () => {
+export const useCreateStakeholder = (uid: string) => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (payload: CreateStakeholderPayload) => {
+            // Inject uid automatically (RLS FIX)
+            const insertPayload = {
+                ...payload,
+                uid,
+            };
+
             const { data, error } = await supabase
                 .from("stakeholders")
-                .insert(payload)
+                .insert(insertPayload)
                 .select()
                 .single();
 
@@ -64,8 +70,10 @@ export const useCreateStakeholder = () => {
             return data as Stakeholder;
         },
 
-        onSuccess: (created) => {
-            queryClient.invalidateQueries({ queryKey: ["stakeholders", created.uid] });
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ["stakeholders", uid],
+            });
         },
     });
 };

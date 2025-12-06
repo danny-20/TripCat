@@ -3,9 +3,99 @@ import Colors from "@/constants/Colors";
 import { Stakeholder } from "@/constants/Types";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { Button, Checkbox, HelperText, Surface, Text, TextInput } from "react-native-paper";
+import {
+    Dimensions,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
+} from "react-native";
+import {
+    Button,
+    Checkbox,
+    HelperText,
+    Text,
+    TextInput,
+} from "react-native-paper";
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+
+// ------------------------------------------------------
+// FIXED & FINAL DROPDOWN COMPONENT
+// ------------------------------------------------------
+function ModalDropdown({
+    label,
+    value,
+    list,
+    onSelect,
+    theme,
+    error,
+}: {
+    label: string;
+    value: string;
+    list: string[];
+    onSelect: (v: string) => void;
+    theme?: any;
+    error?: string;
+}) {
+    const [visible, setVisible] = useState(false);
+
+    return (
+        <>
+            <Pressable onPress={() => setVisible(true)}>
+                <TextInput
+                    mode="outlined"
+                    label={label}
+                    value={value}
+                    editable={false}
+                    right={<TextInput.Icon icon="menu-down" />}
+                    style={styles.input}
+                    theme={theme}
+                    outlineColor={error ? Colors.trip.error : Colors.trip.border}
+                    activeOutlineColor={error ? Colors.trip.error : Colors.trip.primary}
+                />
+            </Pressable>
+
+            {error && <HelperText type="error">{error}</HelperText>}
+
+            <Modal visible={visible} transparent animationType="fade">
+                <Pressable
+                    style={styles.modalOverlay}
+                    onPress={() => setVisible(false)}
+                />
+
+                <View style={styles.dropdownModalBox}>
+                    <ScrollView
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="handled"
+                        style={{ maxHeight: SCREEN_HEIGHT * 0.5 }}
+                    >
+                        {list.map((item) => (
+                            <Pressable
+                                key={item}
+                                onPress={() => {
+                                    onSelect(item);
+                                    setVisible(false);
+                                }}
+                                style={styles.dropdownItemModal}
+                            >
+                                <Text style={{ fontSize: 16 }}>{item}</Text>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                </View>
+            </Modal>
+        </>
+    );
+}
+
+
+
+// ------------------------------------------------------
+// MAIN EDIT SCREEN
+// ------------------------------------------------------
 export default function EditStakeholderScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const stakeholderId = Number(id);
@@ -16,16 +106,18 @@ export default function EditStakeholderScreen() {
     const [details, setDetails] = useState<Stakeholder | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isWhatsappSame, setIsWhatsappSame] = useState(false);
-    const [showStakeholderType, setShowStakeholderType] = useState(false);
-    const [showTaxiType, setShowTaxiType] = useState(false);
 
+
+    // Load stakeholder details
     useEffect(() => {
         if (data) {
-            setDetails(data);
+            setDetails({ ...data }); // ensures new reference
             setIsWhatsappSame(data.whatsapp === data.phone);
         }
     }, [data]);
 
+
+    // Stakeholder and taxi type dropdown lists
     const stakeholderTypes = [
         "HOTEL",
         "HOMESTAY",
@@ -66,55 +158,54 @@ export default function EditStakeholderScreen() {
         "OTHERS: MENTION",
     ];
 
+
+
+    // ------------------------------------------------------
+    // FIXED handleChange — GUARANTEED RE-RENDER
+    // ------------------------------------------------------
     const handleChange = (key: keyof Stakeholder, value: string) => {
-        if (!details) return;
-        setDetails((prev) => prev ? { ...prev, [key]: value } : prev);
-        if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
+        setDetails(prev => {
+            if (!prev) return prev;
+            return { ...prev, [key]: value }; // new object reference → rerender
+        });
+
+        setErrors(prev => ({ ...prev, [key]: "" }));
     };
 
-    const handleWhatsappSync = (checked: boolean) => {
-        setIsWhatsappSame(checked);
-        if (!details) return;
-        setDetails((prev) => prev ? { ...prev, whatsapp: checked ? prev.phone : "" } : prev);
-    };
 
+
+    // ------------------------------------------------------
+    // VALIDATION
+    // ------------------------------------------------------
     const validatePhone = (phone: string) =>
         /^\+?\d{10,15}$/.test(phone.replace(/\s+/g, ""));
 
     const validate = () => {
-        const newErrors: Record<string, string> = {};
+        if (!details) return false;
 
-        if (!details?.stakeholderType?.trim())
-            newErrors.stakeholderType = "Please select stakeholder type";
-
+        const e: Record<string, string> = {};
         const isTaxi =
-            details?.stakeholderType === "TAXI DRIVER" ||
-            details?.stakeholderType === "RENTAL TAXI PROVIDER";
+            details.stakeholderType === "TAXI DRIVER" ||
+            details.stakeholderType === "RENTAL TAXI PROVIDER";
 
-        if (isTaxi && !details?.taxiType?.trim())
-            newErrors.taxiType = "Taxi type required";
+        if (!details.stakeholderType) e.stakeholderType = "Select stakeholder type";
+        if (isTaxi && !details.taxiType) e.taxiType = "Taxi type required";
+        if (!details.businessName) e.businessName = "Business name required";
+        if (!details.contactPersonName) e.contactPersonName = "Contact person required";
+        if (!details.designation) e.designation = "Designation required";
+        if (!details.phone) e.phone = "Phone required";
+        else if (!validatePhone(details.phone)) e.phone = "Invalid phone";
+        if (!details.address) e.address = "Address required";
 
-        if (!details?.businessName.trim())
-            newErrors.businessName = "Business name required";
-
-        if (!details?.contactPersonName.trim())
-            newErrors.contactPersonName = "Contact person required";
-
-        if (!details?.designation.trim())
-            newErrors.designation = "Designation required";
-
-        if (!details?.phone.trim())
-            newErrors.phone = "Phone required";
-        else if (!validatePhone(details.phone))
-            newErrors.phone = "Invalid phone";
-
-        if (!details?.address.trim())
-            newErrors.address = "Address required";
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        setErrors(e);
+        return Object.keys(e).length === 0;
     };
 
+
+
+    // ------------------------------------------------------
+    // SUBMIT
+    // ------------------------------------------------------
     const handleUpdate = () => {
         if (!details) return;
         if (!validate()) return;
@@ -122,17 +213,15 @@ export default function EditStakeholderScreen() {
         updateStakeholder.mutate(
             {
                 id: stakeholderId,
-                payload: {
-                    stakeholderType: details.stakeholderType,
-                    taxiType: details.taxiType || null,
-                    businessName: details.businessName,
-                    contactPersonName: details.contactPersonName,
-                    designation: details.designation,
-                    phone: details.phone,
-                    whatsapp: details.whatsapp || null,
-                    alternatePhone: details.alternatePhone || null,
-                    address: details.address,
-                },
+                stakeholderType: details.stakeholderType,
+                taxiType: details.taxiType || null,
+                businessName: details.businessName,
+                contactPersonName: details.contactPersonName,
+                designation: details.designation,
+                phone: details.phone,
+                whatsapp: details.whatsapp || null,
+                alternatePhone: details.alternatePhone || null,
+                address: details.address,
             },
             {
                 onSuccess: () => {
@@ -147,229 +236,231 @@ export default function EditStakeholderScreen() {
         );
     };
 
-    const Dropdown = ({
-        items,
-        onSelect,
-        onClose,
-    }: {
-        items: string[];
-        onSelect: (v: string) => void;
-        onClose: () => void;
-    }) => (
-        <Surface style={styles.dropdown} elevation={3}>
-            <ScrollView style={{ maxHeight: 250 }}>
-                {items.map((item) => (
-                    <TouchableOpacity
-                        key={item}
-                        onPress={() => {
-                            onSelect(item);
-                            onClose();
-                        }}
-                        style={styles.dropdownItem}
-                    >
-                        <Text>{item}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </Surface>
-    );
 
-    const renderField = (
-        label: string,
-        key: keyof Stakeholder,
-        value: string,
-        keyboardType: any = "default"
-    ) => (
-        <>
-            <TextInput
-                mode="outlined"
-                label={label}
-                value={value}
-                onChangeText={(v) => handleChange(key, v)}
-                keyboardType={keyboardType}
-                textColor={Colors.trip.text}
-                style={styles.input}
-                outlineColor={errors[key] ? Colors.trip.error : Colors.trip.border}
-                activeOutlineColor={errors[key] ? Colors.trip.error : Colors.trip.primary}
-                theme={inputTheme}
-            />
-            {errors[key] && <HelperText type="error">{errors[key]}</HelperText>}
-        </>
-    );
 
+    // ------------------------------------------------------
+    // LOADING STATE
+    // ------------------------------------------------------
     if (isLoading || !details) {
         return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <View style={styles.center}>
                 <Text>Loading...</Text>
             </View>
         );
     }
 
+
+
+    // ------------------------------------------------------
+    // UI
+    // ------------------------------------------------------
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Surface style={styles.card} elevation={3}>
+            <View style={styles.card}>
                 <Text style={styles.title}>Edit Stakeholder</Text>
 
+
+
                 {/* Stakeholder Type */}
-                <View style={styles.dropdownContainer}>
-                    <TextInput
-                        mode="outlined"
-                        label="Stakeholder Type"
-                        value={details.stakeholderType}
-                        editable={false}
-                        textColor={Colors.trip.text}
-                        right={
-                            <TextInput.Icon
-                                icon={showStakeholderType ? "chevron-up" : "chevron-down"}
-                                onPress={() => setShowStakeholderType((s) => !s)}
-                            />
-                        }
-                        style={styles.input}
-                        theme={inputTheme}
-                    />
+                <ModalDropdown
+                    label="Stakeholder Type"
+                    value={details.stakeholderType}
+                    list={stakeholderTypes}
+                    onSelect={(item) => {
+                        setDetails(prev => ({
+                            ...prev!,
+                            stakeholderType: item,
+                            taxiType:
+                                item === "TAXI DRIVER" ||
+                                    item === "RENTAL TAXI PROVIDER"
+                                    ? prev!.taxiType
+                                    : "",
+                        }));
+                    }}
+                    theme={inputTheme}
+                    error={errors.stakeholderType}
+                />
 
-                    {showStakeholderType && (
-                        <Dropdown
-                            items={stakeholderTypes}
-                            onSelect={(item) => {
-                                handleChange("stakeholderType", item);
-                                handleChange("taxiType", "");
-                            }}
-                            onClose={() => setShowStakeholderType(false)}
-                        />
-                    )}
-                </View>
-                {errors.stakeholderType && <HelperText type="error">{errors.stakeholderType}</HelperText>}
 
-                {/* Taxi Type If Required */}
+
+                {/* Taxi Type if applicable */}
                 {(details.stakeholderType === "TAXI DRIVER" ||
                     details.stakeholderType === "RENTAL TAXI PROVIDER") && (
-                        <>
-                            <View style={styles.dropdownContainer}>
-                                <TextInput
-                                    mode="outlined"
-                                    label="Taxi Type"
-                                    value={details.taxiType ?? ""}
-                                    editable={false}
-                                    textColor={Colors.trip.text}
-                                    right={
-                                        <TextInput.Icon
-                                            icon={showTaxiType ? "chevron-up" : "chevron-down"}
-                                            onPress={() => setShowTaxiType((s) => !s)}
-                                        />
-                                    }
-                                    style={styles.input}
-                                    theme={inputTheme}
-                                />
-
-                                {showTaxiType && (
-                                    <Dropdown
-                                        items={taxiTypes}
-                                        onSelect={(item) => handleChange("taxiType", item)}
-                                        onClose={() => setShowTaxiType(false)}
-                                    />
-                                )}
-                            </View>
-                            {errors.taxiType && <HelperText type="error">{errors.taxiType}</HelperText>}
-                        </>
+                        <ModalDropdown
+                            label="Taxi Type"
+                            value={details.taxiType || ""}
+                            list={taxiTypes}
+                            onSelect={(item) => handleChange("taxiType", item)}
+                            theme={inputTheme}
+                            error={errors.taxiType}
+                        />
                     )}
 
-                {/* Other Fields */}
-                {renderField("Business Name", "businessName", details.businessName)}
-                {renderField("Contact Person Name", "contactPersonName", details.contactPersonName)}
-                {renderField("Designation", "designation", details.designation)}
-                {renderField("Phone", "phone", details.phone, "phone-pad")}
+
+
+                {/* Business Name */}
+                <TextInput
+                    mode="outlined"
+                    label="Business Name"
+                    value={details.businessName}
+                    onChangeText={(v) => handleChange("businessName", v)}
+                    style={styles.input}
+                />
+
+                {/* Contact Person */}
+                <TextInput
+                    mode="outlined"
+                    label="Contact Person Name"
+                    value={details.contactPersonName}
+                    onChangeText={(v) => handleChange("contactPersonName", v)}
+                    style={styles.input}
+                />
+
+                {/* Designation */}
+                <TextInput
+                    mode="outlined"
+                    label="Designation"
+                    value={details.designation}
+                    onChangeText={(v) => handleChange("designation", v)}
+                    style={styles.input}
+                />
+
+                {/* Phone */}
+                <TextInput
+                    mode="outlined"
+                    label="Phone"
+                    value={details.phone}
+                    onChangeText={(v) => handleChange("phone", v)}
+                    keyboardType="phone-pad"
+                    style={styles.input}
+                />
+
+
 
                 {/* WhatsApp Same */}
                 <View style={styles.checkboxRow}>
                     <Checkbox
                         status={isWhatsappSame ? "checked" : "unchecked"}
-                        onPress={() => handleWhatsappSync(!isWhatsappSame)}
-                        color={Colors.trip.primary}
+                        onPress={() => {
+                            setIsWhatsappSame(!isWhatsappSame);
+                            handleChange(
+                                "whatsapp",
+                                !isWhatsappSame ? details.phone : ""
+                            );
+                        }}
                     />
-                    <Text style={styles.checkboxText}>WhatsApp same as phone</Text>
+                    <Text>WhatsApp same as phone</Text>
                 </View>
 
-                {renderField("WhatsApp", "whatsapp", details.whatsapp || "", "phone-pad")}
-                {renderField("Alternate Phone", "alternatePhone", details.alternatePhone || "", "phone-pad")}
-                {renderField("Address", "address", details.address)}
 
+
+                {/* WhatsApp */}
+                <TextInput
+                    mode="outlined"
+                    label="WhatsApp"
+                    value={details.whatsapp || ""}
+                    onChangeText={(v) => handleChange("whatsapp", v)}
+                    keyboardType="phone-pad"
+                    style={styles.input}
+                />
+
+
+
+                {/* Alternate Phone */}
+                <TextInput
+                    mode="outlined"
+                    label="Alternate Phone"
+                    value={details.alternatePhone || ""}
+                    onChangeText={(v) => handleChange("alternatePhone", v)}
+                    keyboardType="phone-pad"
+                    style={styles.input}
+                />
+
+
+
+                {/* Address */}
+                <TextInput
+                    mode="outlined"
+                    label="Address"
+                    value={details.address}
+                    onChangeText={(v) => handleChange("address", v)}
+                    style={styles.input}
+                />
+
+
+
+                {/* Save Button */}
                 <Button
                     mode="contained"
                     onPress={handleUpdate}
                     buttonColor={Colors.trip.primary}
                     textColor="#fff"
                     style={styles.button}
-                    labelStyle={{
-                        fontFamily: "Montserrat-SemiBold",
-                        fontSize: 16,
-                    }}
                 >
                     Save Changes
                 </Button>
-            </Surface>
+            </View>
         </ScrollView>
     );
 }
 
-const inputTheme = {
-    roundness: 12,
-    colors: {
-        background: Colors.trip.surface,
-        placeholder: Colors.trip.muted,
-    },
-};
+
+
+const inputTheme = { roundness: 12 };
 
 const styles = StyleSheet.create({
     container: {
-        flexGrow: 1,
-        backgroundColor: Colors.trip.background,
         padding: 20,
+        backgroundColor: Colors.trip.background,
     },
     card: {
         padding: 20,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: Colors.trip.border,
         backgroundColor: Colors.trip.surface,
     },
     title: {
         fontSize: 22,
-        color: Colors.trip.primary,
-        fontFamily: "Montserrat-SemiBold",
         marginBottom: 16,
+        color: Colors.trip.primary,
     },
     input: {
+        marginBottom: 10,
         backgroundColor: Colors.trip.surface,
-        marginBottom: 6,
     },
-    dropdownContainer: {
-        zIndex: 20,
-        marginBottom: 6,
+    center: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
-    dropdown: {
-        backgroundColor: Colors.trip.surface,
-        borderWidth: 1,
+    modalOverlay: {
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "rgba(0,0,0,0.25)",
+    },
+    dropdownModalBox: {
+        position: "absolute",
+        top: SCREEN_HEIGHT * 0.25,
+        left: 20,
+        right: 20,
+        maxHeight: SCREEN_HEIGHT * 0.55,
         borderRadius: 12,
-        borderColor: Colors.trip.border,
-        marginTop: 4,
+        backgroundColor: Colors.trip.surface,
+        paddingVertical: 6,
+        elevation: 10,
     },
-    dropdownItem: {
-        padding: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.trip.border,
+    dropdownItemModal: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
     },
     checkboxRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginVertical: 8,
-    },
-    checkboxText: {
-        marginLeft: 6,
-        color: Colors.trip.text,
+        marginBottom: 12,
     },
     button: {
         marginTop: 16,
-        borderRadius: 12,
     },
 });

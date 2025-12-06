@@ -1,19 +1,32 @@
 import { useCreateStakeholder } from "@/api/stakeholders";
 import { useAuth } from "@/app/providers/AuthProvider";
+import Dropdown from "@/components/Dropdown";
 import Colors from "@/constants/Colors";
-import { Stakeholder } from "@/constants/Types";
+import { StakeholderForm } from "@/constants/Types";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { Button, Checkbox, HelperText, Surface, Text, TextInput } from "react-native-paper";
+import {
+    KeyboardTypeOptions,
+    ScrollView,
+    StyleSheet,
+    View,
+} from "react-native";
+import {
+    Button,
+    Checkbox,
+    HelperText,
+    Surface,
+    Text,
+    TextInput,
+} from "react-native-paper";
 
-export default function CreateStakeholderScreen() {
+
+export default function StakeholderCreateScreen() {
     const { session } = useAuth();
-    const userId = session?.user.id ?? "";
+    const uid = session!.user!.id;
+    const { mutate, isPending } = useCreateStakeholder(uid);
 
-    const createStakeholder = useCreateStakeholder();
-
-    const [details, setDetails] = useState<Stakeholder>({
+    const [details, setDetails] = useState<StakeholderForm>({
         stakeholderType: "",
         taxiType: "",
         businessName: "",
@@ -23,15 +36,12 @@ export default function CreateStakeholderScreen() {
         whatsapp: "",
         alternatePhone: "",
         address: "",
-        uid: userId,
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isWhatsappSame, setIsWhatsappSame] = useState(false);
-    const [showStakeholderType, setShowStakeholderType] = useState(false);
-    const [showTaxiType, setShowTaxiType] = useState(false);
+    const [isWhatsappSame, setIsWhatsappSame] = useState<boolean>(false);
 
-    const stakeholderTypes = [
+    const stakeholderTypes: string[] = [
         "HOTEL",
         "HOMESTAY",
         "GUEST HOUSE",
@@ -47,7 +57,7 @@ export default function CreateStakeholderScreen() {
         "SECURITY EMERGENCY SUPPORT",
     ];
 
-    const taxiTypes = [
+    const taxiTypes: string[] = [
         "SUMO",
         "XYLO",
         "INNOVA",
@@ -71,115 +81,110 @@ export default function CreateStakeholderScreen() {
         "OTHERS: MENTION",
     ];
 
-    const handleChange = (key: keyof Stakeholder, value: string) => {
+    const handleChange = (key: keyof StakeholderForm, value: string) => {
         setDetails((prev) => ({ ...prev, [key]: value }));
-        if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
+        setErrors((prev) => ({ ...prev, [key]: "" }));
     };
 
-    const handleWhatsappSync = (checked: boolean) => {
-        setIsWhatsappSame(checked);
-        setDetails((prev) => ({
-            ...prev,
-            whatsapp: checked ? prev.phone : "",
-        }));
-    };
-
-    const validatePhone = (phone: string) =>
+    const validatePhone = (phone: string): boolean =>
         /^\+?\d{10,15}$/.test(phone.replace(/\s+/g, ""));
 
-    const validate = () => {
-        const newErrors: Record<string, string> = {};
+    const validateForm = (): boolean => {
+        const e: Record<string, string> = {};
 
-        if (!details.stakeholderType.trim()) newErrors.stakeholderType = "Please select stakeholder type";
+        if (!details.stakeholderType) e.stakeholderType = "Select stakeholder type";
 
-        const isTaxi =
-            details.stakeholderType === "TAXI DRIVER" ||
-            details.stakeholderType === "RENTAL TAXI PROVIDER";
+        if (
+            (details.stakeholderType === "TAXI DRIVER" ||
+                details.stakeholderType === "RENTAL TAXI PROVIDER") &&
+            !details.taxiType
+        )
+            e.taxiType = "Select taxi type";
 
-        if (isTaxi && !details.taxiType?.trim()) newErrors.taxiType = "Please select taxi type";
+        if (!details.businessName.trim()) e.businessName = "Business name required";
 
-        if (!details.businessName.trim()) newErrors.businessName = "Business name is required";
-        if (!details.contactPersonName.trim()) newErrors.contactPersonName = "Contact person name is required";
-        if (!details.designation.trim()) newErrors.designation = "Designation is required";
-        if (!details.phone.trim()) newErrors.phone = "Phone is required";
-        else if (!validatePhone(details.phone)) newErrors.phone = "Enter valid phone number";
-        if (!details.address.trim()) newErrors.address = "Address is required";
+        if (!details.contactPersonName.trim())
+            e.contactPersonName = "Contact person name required";
 
-        setErrors(newErrors);
+        if (!details.designation.trim()) e.designation = "Designation required";
 
-        return Object.keys(newErrors).length === 0;
+        if (!details.phone) e.phone = "Phone is required";
+        else if (!validatePhone(details.phone)) e.phone = "Invalid phone number";
+
+        if (!details.whatsapp) e.whatsapp = "Whatsapp is required";
+
+        if (!details.address.trim()) e.address = "Address is required";
+
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    const parseSupabaseError = (message: string): string => {
+        if (message.includes("duplicate key")) {
+            return "A stakeholder with these details already exists.";
+        }
+
+        if (message.includes("row-level security")) {
+            return "You do not have permission to perform this action.";
+        }
+
+        if (message.includes("foreign key")) {
+            return "Related data is missing. Please check your inputs.";
+        }
+
+        if (message.includes("null value")) {
+            return "Some required fields are missing.";
+        }
+
+        // Default fallback
+        return "Something went wrong. Please try again.";
     };
 
     const handleSubmit = () => {
-        if (!validate()) return;
+        if (!validateForm()) return;
 
-        createStakeholder.mutate(
+        mutate(
             {
-                uid: userId,
                 stakeholderType: details.stakeholderType,
                 taxiType: details.taxiType || null,
                 businessName: details.businessName,
                 contactPersonName: details.contactPersonName,
                 designation: details.designation,
                 phone: details.phone,
-                whatsapp: details.whatsapp || null,
-                alternatePhone: details.alternatePhone || null,
+                whatsapp: details.whatsapp,
+                alternatePhone: details.alternatePhone,
                 address: details.address,
             },
             {
                 onSuccess: () => {
-                    alert("Stakeholder added successfully!");
-                    router.replace("/(user)/menu/stakeholders");
+                    alert("Stakeholder created successfully!");
+                    router.replace("/(user)/menu/stakeholders");   // 👈 redirect to index
                 },
-                onError: (err) => alert(err.message),
+                onError: (err: Error) => {
+                    const friendly = parseSupabaseError(err.message);
+                    alert(friendly);
+                },
             }
         );
     };
 
-    const Dropdown = ({
-        items,
-        onSelect,
-        onClose,
-    }: {
-        items: string[];
-        onSelect: (value: string) => void;
-        onClose: () => void;
-    }) => (
-        <Surface style={styles.dropdown} elevation={3}>
-            <ScrollView style={{ maxHeight: 250 }}>
-                {items.map((item) => (
-                    <TouchableOpacity
-                        key={item}
-                        onPress={() => {
-                            onSelect(item);
-                            onClose();
-                        }}
-                        style={styles.dropdownItem}
-                    >
-                        <Text>{item}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </Surface>
-    );
-
-    const renderField = (
+    const renderInput = (
         label: string,
-        key: keyof Stakeholder,
-        value: string,
-        keyboardType: any = "default"
+        key: keyof StakeholderForm,
+        keyboardType: KeyboardTypeOptions = "default"
     ) => (
         <>
             <TextInput
                 mode="outlined"
                 label={label}
-                value={value}
+                value={details[key]}
                 onChangeText={(v) => handleChange(key, v)}
-                keyboardType={keyboardType}
-                textColor={Colors.trip.text}
                 style={styles.input}
+                keyboardType={keyboardType}
                 outlineColor={errors[key] ? Colors.trip.error : Colors.trip.border}
-                activeOutlineColor={errors[key] ? Colors.trip.error : Colors.trip.primary}
+                activeOutlineColor={
+                    errors[key] ? Colors.trip.error : Colors.trip.primary
+                }
                 theme={inputTheme}
             />
             {errors[key] && <HelperText type="error">{errors[key]}</HelperText>}
@@ -187,103 +192,74 @@ export default function CreateStakeholderScreen() {
     );
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Surface style={styles.card} elevation={3}>
-                <Text style={styles.title}>Add Stakeholder</Text>
+        <ScrollView
+            style={{ flex: 1 }}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.container}
+        >
+            {/** FIX 1: Remove elevation effect */}
+            <Surface style={styles.card} elevation={0}>
+                <Text style={styles.title}>Create Stakeholder</Text>
 
-                {/* Stakeholder Type */}
-                <View style={styles.dropdownContainer}>
-                    <TextInput
-                        mode="outlined"
+                {/** FIX 2: Add zIndex wrapper for dropdown */}
+                <View style={{ zIndex: 1000 }}>
+                    <Dropdown
                         label="Stakeholder Type"
                         value={details.stakeholderType}
-                        editable={false}
-                        textColor={Colors.trip.text}
-                        right={
-                            <TextInput.Icon
-                                icon={showStakeholderType ? "chevron-up" : "chevron-down"}
-                                onPress={() => setShowStakeholderType((s) => !s)}
-                            />
-                        }
-                        style={styles.input}
+                        list={stakeholderTypes}
+                        onSelect={(item) => {
+                            handleChange("stakeholderType", item);
+                            handleChange("taxiType", "");
+                        }}
                         theme={inputTheme}
+                        error={errors.stakeholderType}
                     />
-
-                    {showStakeholderType && (
-                        <Dropdown
-                            items={stakeholderTypes}
-                            onSelect={(item) => {
-                                handleChange("stakeholderType", item);
-                                handleChange("taxiType", "");
-                            }}
-                            onClose={() => setShowStakeholderType(false)}
-                        />
-                    )}
                 </View>
 
-                {errors.stakeholderType && <HelperText type="error">{errors.stakeholderType}</HelperText>}
-
-                {/* Taxi Type Conditional */}
                 {(details.stakeholderType === "TAXI DRIVER" ||
                     details.stakeholderType === "RENTAL TAXI PROVIDER") && (
-                        <View style={styles.dropdownContainer}>
-                            <TextInput
-                                mode="outlined"
+                        <View style={{ zIndex: 900 }}>
+                            <Dropdown
                                 label="Taxi Type"
-                                value={details.taxiType ?? ""}
-                                editable={false}
-                                textColor={Colors.trip.text}
-                                right={
-                                    <TextInput.Icon
-                                        icon={showTaxiType ? "chevron-up" : "chevron-down"}
-                                        onPress={() => setShowTaxiType((s) => !s)}
-                                    />
-                                }
-                                style={styles.input}
+                                value={details.taxiType}
+                                list={taxiTypes}
+                                onSelect={(item) => handleChange("taxiType", item)}
                                 theme={inputTheme}
+                                error={errors.taxiType}
                             />
-
-                            {showTaxiType && (
-                                <Dropdown
-                                    items={taxiTypes}
-                                    onSelect={(item) => handleChange("taxiType", item)}
-                                    onClose={() => setShowTaxiType(false)}
-                                />
-                            )}
                         </View>
                     )}
 
-                {errors.taxiType && <HelperText type="error">{errors.taxiType}</HelperText>}
+                {renderInput("Name of Business", "businessName")}
+                {renderInput("Designation", "designation")}
+                {renderInput("Contact Person Name", "contactPersonName")}
+                {renderInput("Phone", "phone", "phone-pad")}
 
-                {/* Text Fields */}
-                {renderField("Business Name", "businessName", details.businessName)}
-                {renderField("Contact Person Name", "contactPersonName", details.contactPersonName)}
-                {renderField("Designation", "designation", details.designation)}
-                {renderField("Phone", "phone", details.phone, "phone-pad")}
-
-                {/* WhatsApp Same as Phone */}
                 <View style={styles.checkboxRow}>
                     <Checkbox
                         status={isWhatsappSame ? "checked" : "unchecked"}
-                        onPress={() => handleWhatsappSync(!isWhatsappSame)}
+                        onPress={() => {
+                            const next = !isWhatsappSame;
+                            setIsWhatsappSame(next);
+                            handleChange("whatsapp", next ? details.phone : "");
+                        }}
                         color={Colors.trip.primary}
                     />
                     <Text style={styles.checkboxText}>WhatsApp same as phone</Text>
                 </View>
 
-                {renderField("WhatsApp", "whatsapp", details.whatsapp, "phone-pad")}
-                {renderField("Alternate Phone", "alternatePhone", details.alternatePhone, "phone-pad")}
-                {renderField("Address", "address", details.address)}
+                {renderInput("WhatsApp", "whatsapp", "phone-pad")}
+                {renderInput("Alternate Phone", "alternatePhone", "phone-pad")}
+                {renderInput("Address", "address")}
 
                 <Button
                     mode="contained"
                     onPress={handleSubmit}
-                    buttonColor={Colors.trip.primary}
-                    textColor="#fff"
+                    disabled={isPending}
                     style={styles.button}
-                    labelStyle={{ fontFamily: "Montserrat-SemiBold" }}
+                    buttonColor={Colors.trip.primary}
                 >
-                    Save Stakeholder
+                    {isPending ? "Saving..." : "Save Stakeholder"}
                 </Button>
             </Surface>
         </ScrollView>
@@ -305,50 +281,35 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     card: {
-        padding: 20,
-        borderRadius: 16,
         backgroundColor: Colors.trip.surface,
+        borderRadius: 16,
+        padding: 20,
         borderWidth: 1,
         borderColor: Colors.trip.border,
+        overflow: "visible", // FIX 3: allow dropdown to overflow
     },
     title: {
         fontFamily: "Montserrat-SemiBold",
         fontSize: 22,
         color: Colors.trip.primary,
-        marginBottom: 20,
+        marginBottom: 16,
     },
     input: {
         backgroundColor: Colors.trip.surface,
         marginBottom: 6,
     },
-    dropdownContainer: {
-        zIndex: 10,
-        marginBottom: 6,
-    },
-    dropdown: {
-        backgroundColor: Colors.trip.surface,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.trip.border,
-        marginTop: 4,
-        maxHeight: 250,
-    },
-    dropdownItem: {
-        padding: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.trip.border,
-    },
-    button: {
-        marginTop: 16,
-        borderRadius: 12,
-    },
     checkboxRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginVertical: 10,
+        marginVertical: 6,
     },
     checkboxText: {
-        marginLeft: 8,
+        marginLeft: 6,
+        fontSize: 14,
         color: Colors.trip.text,
+    },
+    button: {
+        marginTop: 12,
+        borderRadius: 12,
     },
 });

@@ -4,7 +4,6 @@ import React from 'react';
 
 import Colors from '@/constants/Colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Provider as PaperProvider } from "react-native-paper";
 import { useColorScheme } from '../../components/useColorScheme';
 import { useAuth } from '../providers/AuthProvider';
 
@@ -42,55 +41,55 @@ export default function TabLayout() {
   }
 
   return (
-    <PaperProvider theme={paperTheme}>
-      <Tabs
-        screenOptions={{
-          // tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-          // // Disable the static render of the header on web
-          // // to prevent a hydration error in React Navigation v6.
-          // headerShown: useClientOnlyValue(false, true),
-          headerStyle: {
-            backgroundColor: Colors.trip.primary,   // top bar color
-          },
-          headerTintColor: Colors.trip.surface,     // title color
-          tabBarActiveTintColor: Colors.trip.secondary, // active icon/text color
-          tabBarInactiveTintColor: Colors.trip.muted,   // inactive icon/text color
-          tabBarStyle: {
-            backgroundColor: Colors.trip.background,    // tab bar background
-            borderTopColor: Colors.trip.border,
-          },
-          headerShown: false
-        }}>
-        <Tabs.Screen name='index' options={{ href: null }} />
-        <Tabs.Screen
-          name="menu"
-          options={{
-            headerTitle: 'TripCat',
-            title: 'Home',
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? 'home' : 'home-outline'}
-                color={color}
-                size={size}
-              />
-            ),
 
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? 'account' : 'account-outline'}
-                color={color}
-                size={size}
-              />
-            ),
-          }}
-        />
-      </Tabs>
-    </PaperProvider>
+    <Tabs
+      screenOptions={{
+        // tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        // // Disable the static render of the header on web
+        // // to prevent a hydration error in React Navigation v6.
+        // headerShown: useClientOnlyValue(false, true),
+        headerStyle: {
+          backgroundColor: Colors.trip.primary,   // top bar color
+        },
+        headerTintColor: Colors.trip.surface,     // title color
+        tabBarActiveTintColor: Colors.trip.secondary, // active icon/text color
+        tabBarInactiveTintColor: Colors.trip.muted,   // inactive icon/text color
+        tabBarStyle: {
+          backgroundColor: Colors.trip.background,    // tab bar background
+          borderTopColor: Colors.trip.border,
+        },
+        headerShown: false
+      }}>
+      <Tabs.Screen name='index' options={{ href: null }} />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          headerTitle: 'TripCat',
+          title: 'Home',
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'home' : 'home-outline'}
+              color={color}
+              size={size}
+            />
+          ),
+
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'account' : 'account-outline'}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+    </Tabs>
+
   );
 }

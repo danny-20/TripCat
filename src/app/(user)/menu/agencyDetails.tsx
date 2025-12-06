@@ -13,14 +13,17 @@ import {
     Button,
     Checkbox,
     HelperText,
-    IconButton,
     Surface,
     Text,
     TextInput,
 } from "react-native-paper";
 
 export default function AgencyDetailsScreen() {
-    // ---------- LOCAL FORM STATES ----------
+    // ---------- AUTH ----------
+    const { session } = useAuth();
+    const userId = session?.user.id ?? null;
+
+    // ---------- FORM STATES ----------
     const [details, setDetails] = useState<AgencyDetailsPayload>({
         uid: "",
         agencyName: "",
@@ -38,23 +41,18 @@ export default function AgencyDetailsScreen() {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isEditable, setIsEditable] = useState(true);
+    const [isEditable, setIsEditable] = useState(false);
     const [isWhatsappSame, setIsWhatsappSame] = useState(false);
-
-    // ---------- AUTH ----------
-    const { session } = useAuth();
-    const userId = session?.user.id ?? null;
 
     // ---------- API ----------
     const { data: agency, error, isLoading } = useGetAgencyDetail(userId);
     const insertAgency = useInsertAgencyDetails();
     const updateAgency = useUpdateAgencyDetails();
 
-    // ---------- PREFILL DATA ONCE ----------
+    // ---------- PREFILL ----------
     useEffect(() => {
-        if (!agency) return; // No saved details → skip (new user)
+        if (!agency) return;
 
-        // Only fill form once (initial load)
         setDetails({
             uid: agency.uid,
             agencyName: agency.agencyName,
@@ -74,20 +72,25 @@ export default function AgencyDetailsScreen() {
         setIsEditable(false);
     }, [agency]);
 
-    // ---------- LOADING / ERROR STATES ----------
+    // ---------- LOADING ----------
     if (isLoading) return <ActivityIndicator />;
 
     if (error) {
         return (
             <View style={{ padding: 20 }}>
                 <Text style={{ color: Colors.trip.error }}>
-                    Error loading agency details.
+                    Failed to load agency details.
                 </Text>
             </View>
         );
     }
 
-    // ---------- HANDLERS ----------
+    // ---------- HELPERS ----------
+    const handleChange = (key: keyof AgencyDetailsPayload, value: string) => {
+        setDetails((prev) => ({ ...prev, [key]: value }));
+        setErrors((prev) => ({ ...prev, [key]: "" }));
+    };
+
     const handleWhatsappSync = (checked: boolean) => {
         setIsWhatsappSame(checked);
         setDetails((prev) => ({
@@ -96,18 +99,11 @@ export default function AgencyDetailsScreen() {
         }));
     };
 
-    const handleChange = (
-        key: keyof AgencyDetailsPayload,
-        value: string
-    ) => {
-        setDetails((prev) => ({ ...prev, [key]: value }));
-        if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
-    };
-
     const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
     const validatePhone = (phone: string) =>
         /^\+?\d{10,15}$/.test(phone.replace(/\s+/g, ""));
 
+    // ---------- SUBMIT ----------
     const handleSubmit = () => {
         const newErrors: Record<string, string> = {};
 
@@ -116,15 +112,16 @@ export default function AgencyDetailsScreen() {
         if (!details.email) newErrors.email = "Email is required";
         else if (!validateEmail(details.email))
             newErrors.email = "Enter a valid email";
+
         if (!details.phone) newErrors.phone = "Phone number is required";
         else if (!validatePhone(details.phone))
-            newErrors.phone = "Enter a valid phone";
+            newErrors.phone = "Enter a valid phone number";
 
-        if (!details.address) newErrors.address = "Address required";
-        if (!details.city) newErrors.city = "City required";
-        if (!details.state) newErrors.state = "State required";
-        if (!details.country) newErrors.country = "Country required";
-        if (!details.postalCode) newErrors.postalCode = "Postal code required";
+        if (!details.address) newErrors.address = "Address is required";
+        if (!details.city) newErrors.city = "City is required";
+        if (!details.state) newErrors.state = "State is required";
+        if (!details.country) newErrors.country = "Country is required";
+        if (!details.postalCode) newErrors.postalCode = "Postal code is required";
 
         setErrors(newErrors);
         if (Object.keys(newErrors).length > 0) return;
@@ -134,7 +131,7 @@ export default function AgencyDetailsScreen() {
             insertAgency.mutate(
                 { ...details, uid: userId! },
                 {
-                    onSuccess: (created) => {
+                    onSuccess: () => {
                         alert("Agency details added!");
                         setIsEditable(false);
                     },
@@ -173,7 +170,7 @@ export default function AgencyDetailsScreen() {
         );
     };
 
-    // ---------- INPUT RENDER ----------
+    // ---------- INPUT FIELD ----------
     const renderField = (
         label: string,
         key: keyof AgencyDetailsPayload,
@@ -190,16 +187,14 @@ export default function AgencyDetailsScreen() {
                 label={label}
                 value={value}
                 onChangeText={(v) => handleChange(key, v)}
+                editable={isEditable}
+                keyboardType={keyboardType}
                 style={styles.input}
-                outlineColor={
-                    errors[key] ? Colors.trip.error : Colors.trip.border
-                }
+                outlineColor={errors[key] ? Colors.trip.error : Colors.trip.border}
                 activeOutlineColor={
                     errors[key] ? Colors.trip.error : Colors.trip.primary
                 }
                 textColor={Colors.trip.text}
-                editable={isEditable}
-                keyboardType={keyboardType}
                 theme={inputTheme}
             />
             {errors[key] && (
@@ -208,71 +203,75 @@ export default function AgencyDetailsScreen() {
         </>
     );
 
+    // ---------- UI ----------
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Surface style={styles.card} elevation={3}>
-                <View style={styles.header}>
+        <>
+            <ScrollView contentContainerStyle={styles.container}>
+                <Surface style={styles.card} elevation={0}>
                     <Text style={styles.title}>Agency Details</Text>
 
-                    {agency && (
-                        <IconButton
-                            icon="pencil"
-                            size={22}
-                            onPress={() => setIsEditable(true)}
-                            iconColor={Colors.trip.primary}
+                    {renderField("Agency Name", "agencyName", details.agencyName)}
+                    {renderField("Owner Name", "ownerName", details.ownerName)}
+                    {renderField("Email", "email", details.email, "email-address")}
+                    {renderField("Phone", "phone", details.phone, "phone-pad")}
+
+                    <View style={styles.checkboxRow}>
+                        <Checkbox
+                            status={isWhatsappSame ? "checked" : "unchecked"}
+                            onPress={() => handleWhatsappSync(!isWhatsappSame)}
+                            color={Colors.trip.primary}
+                            disabled={!isEditable}
                         />
+                        <Text style={styles.checkboxText}>
+                            WhatsApp same as phone
+                        </Text>
+                    </View>
+
+                    {renderField("WhatsApp", "whatsapp", details.whatsapp, "phone-pad")}
+                    {renderField("Address", "address", details.address)}
+                    {renderField("City", "city", details.city)}
+                    {renderField("State", "state", details.state)}
+                    {renderField("Country", "country", details.country)}
+                    {renderField(
+                        "Postal Code",
+                        "postalCode",
+                        details.postalCode,
+                        "numeric"
                     )}
-                </View>
+                    {renderField("Website (optional)", "website", details.website ?? "")}
+                    {renderField(
+                        "Registration Number (optional)",
+                        "registrationNumber",
+                        details.registrationNumber ?? ""
+                    )}
+                </Surface>
+            </ScrollView>
 
-                {renderField("Agency Name", "agencyName", details.agencyName)}
-                {renderField("Owner Name", "ownerName", details.ownerName)}
-                {renderField("Email", "email", details.email, "email-address")}
-                {renderField("Phone", "phone", details.phone, "phone-pad")}
-
-                <View style={styles.checkboxRow}>
-                    <Checkbox
-                        status={isWhatsappSame ? "checked" : "unchecked"}
-                        onPress={() => handleWhatsappSync(!isWhatsappSame)}
-                        color={Colors.trip.primary}
-                        disabled={!isEditable}
-                    />
-                    <Text style={styles.checkboxText}>
-                        WhatsApp same as phone
-                    </Text>
-                </View>
-
-                {renderField("WhatsApp", "whatsapp", details.whatsapp, "phone-pad")}
-                {renderField("Address", "address", details.address)}
-                {renderField("City", "city", details.city)}
-                {renderField("State", "state", details.state)}
-                {renderField("Country", "country", details.country)}
-                {renderField(
-                    "Postal Code",
-                    "postalCode",
-                    details.postalCode,
-                    "numeric"
-                )}
-                {renderField("Website (optional)", "website", details.website || "")}
-                {renderField(
-                    "Registration Number (optional)",
-                    "registrationNumber",
-                    details.registrationNumber || ""
-                )}
-
-                {isEditable && (
+            {/* ---------- BOTTOM BUTTON ---------- */}
+            <View style={styles.bottomButtonContainer}>
+                {!isEditable ? (
+                    <Button
+                        mode="contained"
+                        onPress={() => setIsEditable(true)}
+                        buttonColor={Colors.trip.primary}
+                        textColor={Colors.trip.surface}
+                        style={styles.bottomButton}
+                    >
+                        Edit Details
+                    </Button>
+                ) : (
                     <Button
                         mode="contained"
                         onPress={handleSubmit}
-                        style={styles.button}
                         buttonColor={Colors.trip.primary}
                         textColor={Colors.trip.surface}
-                        labelStyle={styles.buttonLabel}
+                        style={styles.bottomButton}
                     >
                         Save Details
                     </Button>
                 )}
-            </Surface>
-        </ScrollView>
+            </View>
+        </>
     );
 }
 
@@ -295,6 +294,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         backgroundColor: Colors.trip.background,
         padding: 20,
+        paddingBottom: 120, // space for bottom button
     },
     card: {
         backgroundColor: Colors.trip.surface,
@@ -303,28 +303,15 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.trip.border,
     },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 10,
-    },
     title: {
         fontFamily: "Montserrat-SemiBold",
         color: Colors.trip.primary,
         fontSize: 22,
+        marginBottom: 10,
     },
     input: {
         backgroundColor: Colors.trip.surface,
         marginBottom: 6,
-    },
-    button: {
-        marginTop: 10,
-        borderRadius: 12,
-    },
-    buttonLabel: {
-        fontFamily: "Montserrat-SemiBold",
-        fontSize: 16,
     },
     checkboxRow: {
         flexDirection: "row",
@@ -334,5 +321,19 @@ const styles = StyleSheet.create({
     checkboxText: {
         color: Colors.trip.text,
         fontSize: 14,
+    },
+    bottomButtonContainer: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 16,
+        backgroundColor: Colors.trip.surface,
+        borderTopWidth: 1,
+        borderTopColor: Colors.trip.border,
+    },
+    bottomButton: {
+        borderRadius: 12,
+        paddingVertical: 4,
     },
 });

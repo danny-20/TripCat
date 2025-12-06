@@ -2,7 +2,7 @@ import Colors from '@/constants/Colors';
 import { menus } from '@/constants/Types';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Card, FAB, IconButton } from 'react-native-paper';
+import { Card, IconButton } from 'react-native-paper';
 
 const MenuScreen = () => {
     const router = useRouter();
@@ -31,13 +31,7 @@ const MenuScreen = () => {
                 ))}
             </ScrollView>
 
-            {/* Floating button at bottom of screen */}
-            <FAB
-                icon="plus"
-                style={styles.fab}
-                color="#FEFCF3"
-                onPress={() => console.log('Create pressed')}
-            />
+
         </View>
     );
 };
@@ -63,12 +57,7 @@ const styles = StyleSheet.create({
     icon: {
         color: Colors.trip.surface,
     },
-    fab: {
-        position: 'absolute',
-        right: 20,
-        bottom: 20,
-        backgroundColor: Colors.trip.secondary,
-    },
+
     scrollContainer: {
         paddingVertical: 16,   // vertical padding inside scroll view
         paddingHorizontal: 16, // horizontal padding (space from left/right edges)

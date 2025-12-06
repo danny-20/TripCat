@@ -16,11 +16,11 @@ export default function MenuStack() {
                 backgroundColor: Colors.trip.background, // default screen background
             },
         }}>
-            <Stack.Screen name="index" options={{ title: 'TripCat' }} />
+            <Stack.Screen name="index" />
             <Stack.Screen name="agencyDetails" options={{ title: 'Agency Details' }} />
             <Stack.Screen name="bookingData" options={{ title: 'Booking Data' }} />
-            <Stack.Screen name="stakeholderDetails" options={{ title: 'Stakeholder Details' }} />
             <Stack.Screen name="bookingDetails" options={{ title: 'Booking Details' }} />
+
 
         </Stack>
 
