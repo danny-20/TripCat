@@ -11,7 +11,7 @@ export default function ProfileStack() {
                     fontFamily: 'Montserrat-SemiBold',
                     fontSize: 20,
                 },
-                headerTitleAlign: 'center',
+
             }}
         >
             <Stack.Screen

@@ -1,53 +1,82 @@
+import { getAllItinerariesForIndex } from "@/api/itineraries";
 import Colors from "@/constants/Colors";
+import { Itinerary } from "@/constants/itinerary";
 import { Link } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Surface, Text } from "react-native-paper";
+import { ActivityIndicator, Button, Surface, Text } from "react-native-paper";
 
-// TODO: Replace with real Supabase data
-const fakeItineraries: any[] = [];
+type ItineraryListItem = Pick<
+    Itinerary,
+    "id" | "title" | "subtitle" | "days"
+>;
 
 export default function ItineraryIndex() {
-    const hasData = fakeItineraries.length > 0;
+    const [itineraries, setItineraries] = useState<ItineraryListItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const hasData = itineraries.length > 0;
+
+    useEffect(() => {
+        const load = async () => {
+            const { data, error } = await getAllItinerariesForIndex();
+
+            if (!error && data) {
+                setItineraries(data);
+            }
+
+            setLoading(false);
+        };
+
+        load();
+    }, []);
 
     return (
         <View style={styles.screen}>
             <ScrollView
                 contentContainerStyle={[
                     styles.container,
-                    !hasData && styles.centerContent, // center only when empty
+                    !hasData && !loading && styles.centerContent,
                 ]}
             >
                 {/* ─────────────────────────────────────────────── */}
-                {/* CREATE BUTTON - Centered */}
+                {/* LOADING STATE */}
                 {/* ─────────────────────────────────────────────── */}
-                <View style={styles.centerWrapper}>
-                    <Link href="/(user)/menu/Itinerary/create" asChild>
-                        <Button
-                            mode="contained"
-                            buttonColor={Colors.trip.primary}
-                            textColor={Colors.trip.surface}
-                            style={styles.createButton}
-                        >
-                            Create Itinerary
-                        </Button>
-                    </Link>
-
-                    {/* Space between buttons */}
-
-                </View>
+                {loading && (
+                    <ActivityIndicator
+                        size="large"
+                        color={Colors.trip.primary}
+                    />
+                )}
 
                 {/* ─────────────────────────────────────────────── */}
                 {/* LIST OF ITINERARIES */}
                 {/* ─────────────────────────────────────────────── */}
-                {hasData &&
-                    fakeItineraries.map((item) => (
-                        <Surface key={item.id} style={styles.card} elevation={0}>
-                            <Text style={styles.cardTitle}>{item.name}</Text>
-                            <Text style={styles.cardSub}>{item.days} Days Trip</Text>
+                {!loading &&
+                    hasData &&
+                    itineraries.map((item) => (
+
+                        <Surface
+                            key={item.id}
+                            style={styles.card}
+                            elevation={0}
+                        >
+                            <Text style={styles.cardTitle}>
+                                {item.title}
+                            </Text>
+
+                            <Text style={styles.cardSub}>
+                                {item.subtitle}
+                            </Text>
+
+                            <Text style={styles.cardSub}>
+                                {item.days} D / {Math.max(item.days - 1, 0)} N Trip
+                            </Text>
 
                             <Link
                                 href={{
-                                    pathname: "/(user)/menu/Itinerary/[id]",
+                                    pathname:
+                                        "/(user)/menu/itinerary/[id]",
                                     params: { id: item.id },
                                 }}
                                 asChild
@@ -57,7 +86,7 @@ export default function ItineraryIndex() {
                                     style={styles.viewButton}
                                     textColor={Colors.trip.primary}
                                 >
-                                    View Details
+                                    View & Assign
                                 </Button>
                             </Link>
                         </Surface>
@@ -66,11 +95,13 @@ export default function ItineraryIndex() {
                 {/* ─────────────────────────────────────────────── */}
                 {/* EMPTY STATE */}
                 {/* ─────────────────────────────────────────────── */}
-                {!hasData && (
+                {!loading && !hasData && (
                     <Surface style={styles.emptyCard} elevation={0}>
-                        <Text style={styles.emptyTitle}>No itineraries found</Text>
+                        <Text style={styles.emptyTitle}>
+                            No itineraries found
+                        </Text>
                         <Text style={styles.emptyMessage}>
-                            Create your first itinerary to get started.
+                            Predefined itineraries will appear here.
                         </Text>
                     </Surface>
                 )}
@@ -92,18 +123,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
 
-    centerWrapper: {
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 20,
-    },
-
-    createButton: {
-        width: 220,
-        borderRadius: 12,
-    },
-
-    // List card style (matches stakeholders)
+    // List card style (unchanged)
     card: {
         backgroundColor: Colors.trip.surface,
         borderRadius: 16,
@@ -127,7 +147,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
 
-    // Empty state (same as stakeholders)
+
+    // Empty state (unchanged)
     emptyCard: {
         backgroundColor: Colors.trip.surface,
         borderRadius: 16,

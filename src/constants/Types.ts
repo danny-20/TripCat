@@ -2,7 +2,7 @@ export type MenuItem = {
     id: string;
     title: string;
     icon: string;
-    route: '/menu/agencyDetails' | '/menu/stakeholders' | '/menu/itinerary' | '/menu/templates';
+    route: '/(user)/menu/agencyDetails' | '/(user)/menu/stakeholders' | '/(user)/menu/itinerary' | '/(user)/menu/templates';
 };
 
 export const menus: MenuItem[] = [
@@ -10,25 +10,25 @@ export const menus: MenuItem[] = [
         id: '1',
         title: 'Agency Details',
         icon: 'office-building',
-        route: '/menu/agencyDetails',
+        route: '/(user)/menu/agencyDetails',
     },
     {
         id: '2',
         title: 'Stakeholders',
         icon: 'account-group',
-        route: '/menu/stakeholders',
+        route: '/(user)/menu/stakeholders',
     },
     {
         id: '3',
         title: 'Itinerary',
         icon: 'map',
-        route: '/menu/itinerary',
+        route: '/(user)/menu/itinerary',
     },
     {
         id: '4',
         title: 'Templates',
         icon: 'file-document-multiple',
-        route: '/menu/templates',
+        route: '/(user)/menu/templates',
     },
 ];
 

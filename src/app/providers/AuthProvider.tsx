@@ -22,28 +22,79 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     const [loading, setLoading] = useState(true)
     const [profile, setProfile] = useState(null)
 
+    // useEffect(() => {
+    //     let authListener: any;
+
+    //     const fetchSession = async () => {
+    //         const { data: { session } } = await supabase.auth.getSession()
+    //         setSession(session);
+
+
+    //         if (session) {
+    //             const { data } = await supabase
+    //                 .from('profiles')
+    //                 .select('*')
+    //                 .eq('id', session.user.id)
+    //                 .single();
+    //             setProfile(data || null)
+    //         }
+    //         setLoading(false);
+    //     }
+    //     fetchSession();
+    //     supabase.auth.onAuthStateChange((_event, session) => { setSession(session) })
+
+    // }, [])
     useEffect(() => {
-        const fetchSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
+        let authListener: any;
+
+        const load = async () => {
+            // Get initial session
+            const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
 
-
+            // Load profile
             if (session) {
                 const { data } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
+                    .from("profiles")
+                    .select("*")
+                    .eq("id", session.user.id)
                     .single();
-                setProfile(data || null)
+                setProfile(data || null);
             }
+
             setLoading(false);
-        }
-        fetchSession();
-        supabase.auth.onAuthStateChange((_event, session) => { setSession(session) })
 
-    }, [])
+            // Setup listener with unsubscribe
+            authListener = supabase.auth.onAuthStateChange(
+                async (_event, newSession) => {
+                    setSession(newSession);
 
-    return <AuthContext.Provider value={{ session, loading, profile, isAdmin: profile?.group === 'ADMIN' }}>{children}</AuthContext.Provider>
+                    if (newSession) {
+                        const { data } = await supabase
+                            .from("profiles")
+                            .select("*")
+                            .eq("id", newSession.user.id)
+                            .single();
+
+                        setProfile(data || null);
+                    } else {
+                        setProfile(null);
+                    }
+                }
+            );
+        };
+
+        load();
+
+        // Cleanup to prevent infinite loops
+        return () => {
+            if (authListener?.subscription) {
+                authListener.subscription.unsubscribe();
+            }
+        };
+    }, []);
+
+    return <AuthContext.Provider value={{ session, loading, profile, isAdmin: profile?.group === "ADMIN" }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext);

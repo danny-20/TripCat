@@ -20,9 +20,19 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
-  const { session } = useAuth();
 
+  const { session, loading, isAdmin } = useAuth();
 
+  if (loading) return null;
+
+  // Not logged in → login page
+  if (!session) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  if (isAdmin) {
+    return <Redirect href="/(admin)" />;
+  }
   const paperTheme = {
     roundness: 12,
     colors: {
@@ -36,9 +46,6 @@ export default function TabLayout() {
     },
   };
 
-  if (!session) {
-    return <Redirect href="/" />
-  }
 
   return (
 

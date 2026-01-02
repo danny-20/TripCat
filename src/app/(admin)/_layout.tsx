@@ -1,79 +1,71 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Redirect, Tabs } from 'expo-router';
-import React from 'react';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Redirect, Tabs } from "expo-router";
+import React from "react";
 
-import Colors, { adminTheme } from '@/constants/Colors';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Provider as PaperProvider } from "react-native-paper";
-import { useColorScheme } from '../../components/useColorScheme';
-import { useAuth } from '../providers/AuthProvider';
+import Colors from "@/constants/Colors";
+import { useColorScheme } from "../../components/useColorScheme";
+import { useAuth } from "../providers/AuthProvider";
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
-
-export default function TabLayout() {
+export default function AdminTabLayout() {
   const colorScheme = useColorScheme();
+  const { session, loading, isAdmin } = useAuth();
 
-  const { isAdmin } = useAuth()
-  if (!isAdmin) {
-    return <Redirect href="/" />
-  }
+  // Wait until session is loaded
+  if (loading) return null;
+
+  // Not logged in → send to login
+  if (!session) return <Redirect href="/(auth)/sign-in" />;
+
+  // Logged-in but NOT admin → block access
+  if (!isAdmin) return <Redirect href="/(user)" />;
+
+  const activeColor = Colors.trip.secondary;
+  const inactiveColor = Colors.trip.muted;
+
   return (
-    <PaperProvider theme={adminTheme}>
-      <Tabs
-        screenOptions={{
-          // tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-          // // Disable the static render of the header on web
-          // // to prevent a hydration error in React Navigation v6.
-          // headerShown: useClientOnlyValue(false, true),
-          headerStyle: {
-            backgroundColor: Colors.admin.primary,   // top bar color
-          },
-          headerTintColor: Colors.admin.surface,     // title color
-          tabBarActiveTintColor: Colors.trip.secondary, // active icon/text color
-          tabBarInactiveTintColor: Colors.trip.muted,   // inactive icon/text color
-          tabBarStyle: {
-            backgroundColor: Colors.admin.background,    // tab bar background
-            borderTopColor: Colors.trip.border,
-          },
-          headerShown: false
-        }}>
-        <Tabs.Screen name='index' options={{ href: null }} />
-        <Tabs.Screen
-          name="menu"
-          options={{
-            headerTitle: 'TripCat',
-            title: 'Home',
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? 'home' : 'home-outline'}
-                color={color}
-                size={size}
-              />
-            ),
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: inactiveColor,
+        tabBarStyle: {
+          backgroundColor: Colors.trip.background,
+          borderTopColor: Colors.trip.border,
+          height: 60,
+          paddingBottom: 6,
+        },
+      }}
+    >
+      {/* Hidden route (required by Expo Router) */}
+      <Tabs.Screen name="index" options={{ href: null }} />
 
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialCommunityIcons
-                name={focused ? 'account' : 'account-outline'}
-                color={color}
-                size={size}
-              />
-            ),
-          }}
-        />
-      </Tabs>
+      <Tabs.Screen
+        name="menu"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? "view-dashboard" : "view-dashboard-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
 
-    </PaperProvider>
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? "account" : "account-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }

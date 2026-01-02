@@ -1,4 +1,5 @@
-import MenuScreen from '@/components/MenuScreen';
+import AdminMenuScreen from '@/components/AdminMenuScreen';
+import { adminMenus } from '@/constants/adminMenus';
 import Colors from '@/constants/Colors';
 import { Stack } from 'expo-router';
 
@@ -9,7 +10,8 @@ export default function HomeScreen() {
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ title: " TripCat" }} />
-            <MenuScreen />
+            <AdminMenuScreen menus={adminMenus} />
+
         </View>
     );
 };

@@ -37,7 +37,8 @@ const Colors = {
     background: "#121212",    // deep dark background
     surface: "#1E1E1E",       // slightly lighter for cards/surfaces
     text: "#FFFFFF",          // white for readability
-    error: "#EF476F",         // same accent red
+    error: "#EF476F",
+    card: "#753945"        // same accent red
   },
 };
 

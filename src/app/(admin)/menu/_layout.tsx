@@ -18,11 +18,11 @@ export default function MenuStack() {
                 },
             }}
         >
-            <Stack.Screen name="index" options={{ title: 'TripCat Admin' }} />
+            {/* <Stack.Screen name="index" options={{ title: 'TripCat Admin' }} />
             <Stack.Screen name="agencyDetails" options={{ title: 'Agency Details' }} />
             <Stack.Screen name="bookingData" options={{ title: 'Booking Data' }} />
             <Stack.Screen name="stakeholderDetails" options={{ title: 'Stakeholder Details' }} />
-            <Stack.Screen name="bookingDetails" options={{ title: 'Booking Details' }} />
+            <Stack.Screen name="bookingDetails" options={{ title: 'Booking Details' }} /> */}
 
         </Stack>
 
