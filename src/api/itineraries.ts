@@ -139,3 +139,64 @@ export async function getAllItinerariesForIndex() {
 
     return { data, error: null };
 }
+
+/**
+ * ADMIN: Get itinerary with day-wise details
+ */
+export async function getItineraryById(id: string) {
+    const { data, error } = await supabase
+        .from("itineraries")
+        .select(`
+      id,
+      title,
+      subtitle,
+      overview,
+      days,
+      itinerary_days (
+        id,
+        day_number,
+        from_location,
+        to_location,
+        travel_time_hours,
+        highlights,
+        overnight_stay,
+        description
+      )
+    `)
+        .eq("id", id)
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+
+/**
+ * ADMIN: Delete itinerary and its days
+ */
+export async function deleteItinerary(itineraryId: number) {
+    // 1. Delete child rows first
+    const { error: daysError } = await supabase
+        .from("itinerary_days")
+        .delete()
+        .eq("itinerary_id", itineraryId);
+
+    if (daysError) {
+        console.log("Error deleting itinerary days:", daysError);
+        return { error: daysError };
+    }
+
+    // 2. Delete parent itinerary
+    const { error: itineraryError } = await supabase
+        .from("itineraries")
+        .delete()
+        .eq("id", itineraryId);
+
+    if (itineraryError) {
+        console.log("Error deleting itinerary:", itineraryError);
+        return { error: itineraryError };
+    }
+
+    return { error: null };
+}
+

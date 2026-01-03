@@ -1,4 +1,4 @@
-import { getAllItinerariesForIndex } from "@/api/itineraries";
+import { deleteItinerary, getAllItinerariesForIndex } from "@/api/itineraries";
 import Colors from "@/constants/Colors";
 import { Itinerary } from "@/constants/itinerary";
 import { useRouter } from "expo-router";
@@ -50,14 +50,29 @@ export default function ItinerariesIndex() {
                 {
                     text: "Delete",
                     style: "destructive",
-                    onPress: () => {
-                        console.log("DELETE ITINERARY ID:", id);
-                        // delete API will be wired later
+                    onPress: async () => {
+                        try {
+                            const { error } = await deleteItinerary(id);
+
+                            if (error) {
+                                Alert.alert("Error", "Failed to delete itinerary");
+                                return;
+                            }
+
+                            // Refresh list after delete
+                            setItineraries((prev) => prev.filter((item) => item.id !== id));
+
+                            Alert.alert("Deleted", "Itinerary deleted successfully");
+                        } catch (e) {
+
+                            Alert.alert("Error", "Something went wrong");
+                        }
                     },
                 },
             ]
         );
     };
+
 
     return (
         <View style={styles.container}>
@@ -100,8 +115,9 @@ export default function ItinerariesIndex() {
                             </Text>
 
                             <Text style={styles.itemDays}>
-                                {item.days} Days
+                                {Math.max(item.days - 1, 0)} N / {item.days} D
                             </Text>
+
 
                             <View style={styles.actionRow}>
                                 <IconButton
