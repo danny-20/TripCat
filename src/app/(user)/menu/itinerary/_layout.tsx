@@ -16,6 +16,8 @@ export default function ItineraryLayout() {
             <Stack.Screen name="create" options={{ title: "Create Itinerary" }} />
             <Stack.Screen name="[id]" options={{ title: "Itinerary Details" }} />
             <Stack.Screen name="edit" options={{ title: "Edit Itinerary" }} />
+            <Stack.Screen name="assign" options={{ title: "Assign" }}
+            />
         </Stack>
     );
 }

@@ -1,4 +1,4 @@
-import { Itinerary, ItineraryDay } from "@/constants/itinerary";
+import { CreateItineraryAssignment, Itinerary, ItineraryDay } from "@/constants/itinerary";
 import { supabase } from "@/lib/supabase";
 
 export async function createItinerary(
@@ -200,3 +200,33 @@ export async function deleteItinerary(itineraryId: number) {
     return { error: null };
 }
 
+/*--------------------------users-------------------------------*/
+
+export async function createItineraryAssignment(
+    payload: CreateItineraryAssignment
+) {
+    const { error } = await supabase
+        .from("itinerary_assignments")
+        .insert({
+            itinerary_id: payload.itineraryId,
+            created_by: payload.createdBy,
+
+            customer_name: payload.customerName,
+
+            contact_number: payload.contactNumber,
+            whatsapp_number: payload.whatsappNumber,
+            alternate_number: payload.alternateNumber || null,
+
+            travel_start_date: payload.startDate,
+            travel_end_date: payload.endDate,
+            nights: payload.nights,
+
+            adults: payload.adults,
+            children: payload.children,
+            total_persons: payload.totalPersons,
+        });
+
+    if (error) {
+        throw new Error(error.message);
+    }
+}

@@ -164,7 +164,7 @@ export default function UserItineraryPreview() {
                     textColor={Colors.trip.surface}
                     onPress={() =>
                         router.push(
-                            `/(user)/menu/itineraries/assign/${id}` as any
+                            `/(user)/menu/itinerary/assign/${id}` as any
                         )
                     }
                 >

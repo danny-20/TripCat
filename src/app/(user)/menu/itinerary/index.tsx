@@ -77,7 +77,7 @@ export default function ItineraryIndex() {
                                 href={{
                                     pathname:
                                         "/(user)/menu/itinerary/[id]",
-                                    params: { id: item.id },
+                                    params: { id: item.id as any },
                                 }}
                                 asChild
                             >

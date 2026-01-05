@@ -38,3 +38,51 @@ export type DayForm = {
     description: string[];
 
 };
+
+
+export interface CreateItineraryAssignment {
+    itineraryId: number;      // itineraries.id
+    createdBy: string;        // profiles.id (auth user)
+
+    customerName: string;
+
+    contactNumber: string;
+    whatsappNumber: string;
+    alternateNumber?: string;
+
+    startDate: Date;
+    endDate: Date;
+    nights: number;
+
+    adults: number;
+    children: number;
+    totalPersons: number;
+}
+
+export interface PdfDay {
+    dayNumber: number;
+    title: string;
+
+    fromLocation?: string;
+    toLocation?: string;
+
+    travelTime?: string;
+
+    highlights: string[];
+
+    overnightStay?: string;
+
+    description?: string;
+}
+
+export interface PdfItinerary {
+    title: string;
+    subtitle?: string;
+
+    overview: {
+        dayNumber: number;
+        summary: string;
+    }[];
+
+    days: PdfDay[];
+}
